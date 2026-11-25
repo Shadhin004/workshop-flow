@@ -4,11 +4,13 @@
     "backend": {
       "root": "backend",
       "framework": "express",
-      "entrypoint": "src/app.ts"
+      "entrypoint": "src/app.ts",
+      "installCommand": "npm install"
     },
     "frontend": {
       "root": "frontend",
       "framework": "angular",
+      "installCommand": "npm install",
       "buildCommand": "npm run build",
       "outputDirectory": "dist/frontend/browser"
     }
