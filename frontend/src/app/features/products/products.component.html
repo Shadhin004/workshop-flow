@@ -1,0 +1,209 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-title">Products &amp; Bill of Materials</h1>
+    <p class="page-subtitle">
+      Define finished workshop products and the raw materials consumed per unit.
+    </p>
+  </div>
+  <button
+    type="button"
+    class="btn btn-primary"
+    [disabled]="materials().length === 0"
+    (click)="openCreateModal()"
+  >
+    + New Product
+  </button>
+</header>
+
+@if (loading()) {
+  <div class="card card-body empty-state">Loading product catalog...</div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+} @else if (products().length === 0) {
+  <div class="card card-body empty-state">
+    No products configured yet. Create a product and attach its bill of materials.
+  </div>
+} @else {
+  <div class="products-grid">
+    @for (product of products(); track product.id) {
+      <article class="card product-card">
+        <div class="card-header">
+          <div>
+            <div class="product-title-row">
+              <h2 class="card-title">{{ product.name }}</h2>
+              @if (product.sku) {
+                <span class="sku-tag mono">{{ product.sku }}</span>
+              }
+            </div>
+            @if (product.description) {
+              <p class="product-desc">{{ product.description }}</p>
+            }
+          </div>
+
+          <div class="card-actions">
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              (click)="openEditModal(product)"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger-outline btn-sm"
+              (click)="deleteProduct(product)"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table bom-table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>Qty / Unit</th>
+                <th>Current Stock</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (line of product.bom; track line.materialId) {
+                <tr>
+                  <td class="bom-mat">{{ line.materialName }}</td>
+                  <td class="mono">{{ line.quantityPerUnit }} {{ line.unit }}</td>
+                  <td class="mono">{{ line.currentStock }} {{ line.unit }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </article>
+    }
+  </div>
+}
+
+@if (modalOpen()) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div
+      class="modal-panel modal-wide"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="editingProduct() ? 'Edit Product' : 'New Product'"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ editingProduct() ? 'Edit Product & BOM' : 'New Product & BOM' }}
+        </h2>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="saveProduct()">
+        <div class="modal-body form-grid">
+          @if (formError()) {
+            <div class="alert alert-danger">{{ formError() }}</div>
+          }
+
+          <div class="form-row-2">
+            <div class="field">
+              <label class="field-label" for="prod-name">Product Name</label>
+              <input
+                id="prod-name"
+                type="text"
+                class="input"
+                formControlName="name"
+                placeholder="e.g. Oak Coffee Table"
+              />
+              @if (form.controls.name.touched && form.controls.name.invalid) {
+                <span class="field-error">Product name is required.</span>
+              }
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="prod-sku">SKU (optional)</label>
+              <input
+                id="prod-sku"
+                type="text"
+                class="input"
+                formControlName="sku"
+                placeholder="e.g. TBL-OAK-02"
+              />
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="prod-desc">Description (optional)</label>
+            <input
+              id="prod-desc"
+              type="text"
+              class="input"
+              formControlName="description"
+              placeholder="Short workshop specification"
+            />
+          </div>
+
+          <div class="bom-section">
+            <div class="bom-header">
+              <span class="field-label">Bill of Materials (per 1 unit)</span>
+              <button
+                type="button"
+                class="btn btn-secondary btn-sm"
+                (click)="addBomLine()"
+                [disabled]="bomArray.length >= materials().length"
+              >
+                + Add Material
+              </button>
+            </div>
+
+            <div formArrayName="bom" class="bom-lines">
+              @for (line of bomArray.controls; track $index; let i = $index) {
+                <div [formGroupName]="i" class="bom-line-row">
+                  <select class="select" formControlName="materialId" aria-label="Material">
+                    @for (mat of materials(); track mat.id) {
+                      <option [value]="mat.id">{{ mat.name }} ({{ mat.unit }})</option>
+                    }
+                  </select>
+
+                  <div class="qty-unit-wrap">
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.001"
+                      class="input"
+                      formControlName="quantityPerUnit"
+                      aria-label="Quantity per unit"
+                    />
+                    <span class="unit-suffix">
+                      {{ unitForMaterial(line.get('materialId')?.value) }}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn btn-danger-outline btn-sm"
+                    (click)="removeBomLine(i)"
+                    [disabled]="bomArray.length <= 1"
+                  >
+                    Remove
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+            {{ submitting() ? 'Saving...' : (editingProduct() ? 'Save Product' : 'Create Product') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

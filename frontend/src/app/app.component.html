@@ -1,0 +1,71 @@
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">WF</div>
+      <div>
+        <div class="brand-name">WorkshopFlow</div>
+        <div class="brand-sub">Furniture Studio</div>
+      </div>
+    </div>
+
+    <nav class="nav-list" aria-label="Main navigation">
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="nav-active"
+        class="nav-item"
+      >
+        <span class="nav-label">Dashboard</span>
+      </a>
+
+      <a
+        routerLink="/materials"
+        routerLinkActive="nav-active"
+        class="nav-item"
+      >
+        <span class="nav-label">Materials</span>
+        @if (badges.lowStockCount() > 0) {
+          <span class="nav-pill nav-pill-warn" title="Low stock materials">
+            {{ badges.lowStockCount() }}
+          </span>
+        }
+      </a>
+
+      <a
+        routerLink="/products"
+        routerLinkActive="nav-active"
+        class="nav-item"
+      >
+        <span class="nav-label">Products &amp; BOM</span>
+      </a>
+
+      <a
+        routerLink="/orders"
+        routerLinkActive="nav-active"
+        class="nav-item"
+      >
+        <span class="nav-label">Production Orders</span>
+        @if (badges.openOrdersCount() > 0) {
+          <span
+            class="nav-pill"
+            [class.nav-pill-danger]="badges.blockedOrdersCount() > 0"
+          >
+            {{ badges.openOrdersCount() }}
+          </span>
+        }
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="footer-note">Production &amp; Inventory</div>
+      <div class="footer-env">Local SQLite &bull; REST API</div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-container">
+      <router-outlet />
+    </div>
+  </main>
+</div>
+
+<app-toast-container />

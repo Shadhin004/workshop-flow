@@ -1,0 +1,37 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.search-input {
+  max-width: 340px;
+}
+
+.filter-active {
+  background-color: var(--status-warn-bg);
+  border-color: #f59e0b;
+  color: var(--status-warn-text);
+}
+
+.cell-name {
+  font-weight: 600;
+}
+
+.cell-stock {
+  font-weight: 600;
+}
+
+.col-actions {
+  text-align: right;
+  width: 170px;
+}
+
+.action-group {
+  display: inline-flex;
+  gap: 8px;
+}

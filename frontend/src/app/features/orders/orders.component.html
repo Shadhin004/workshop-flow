@@ -1,0 +1,241 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-title">Production Orders</h1>
+    <p class="page-subtitle">
+      Schedule workshop batches, verify material availability, and deduct stock upon completion.
+    </p>
+  </div>
+  <button
+    type="button"
+    class="btn btn-primary"
+    [disabled]="products().length === 0"
+    (click)="openCreateModal()"
+  >
+    + New Production Order
+  </button>
+</header>
+
+<div class="filter-tabs" role="tablist" aria-label="Filter orders by status">
+  @for (tab of ['all', 'open', 'completed', 'cancelled']; track tab) {
+    <button
+      type="button"
+      class="tab-btn"
+      [class.tab-active]="statusFilter() === tab"
+      (click)="statusFilter.set($any(tab))"
+    >
+      {{ tab === 'all' ? 'All Orders' : tab[0].toUpperCase() + tab.slice(1) }}
+    </button>
+  }
+</div>
+
+@if (loading()) {
+  <div class="card card-body empty-state">Loading production orders...</div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+} @else if (filteredOrders().length === 0) {
+  <div class="card card-body empty-state">
+    No production orders found for this filter.
+  </div>
+} @else {
+  <div class="orders-stack">
+    @for (order of filteredOrders(); track order.id) {
+      <article class="card order-card">
+        <div class="card-header order-header">
+          <div>
+            <div class="order-title-row">
+              <h2 class="card-title">
+                Order #{{ order.id }} &mdash; {{ order.quantity }} &times; {{ order.productName }}
+              </h2>
+
+              @if (order.status === 'open') {
+                @if (order.canComplete) {
+                  <span class="badge badge-ok">Open &bull; Ready to Build</span>
+                } @else {
+                  <span class="badge badge-danger">Open &bull; Blocked</span>
+                }
+              } @else if (order.status === 'completed') {
+                <span class="badge badge-ok">Completed</span>
+              } @else {
+                <span class="badge badge-neutral">Cancelled</span>
+              }
+            </div>
+
+            <div class="order-meta">
+              Created {{ order.createdAt | date: 'MMM d, y, HH:mm' }}
+              @if (order.completedAt) {
+                &bull; Completed {{ order.completedAt | date: 'MMM d, y, HH:mm' }}
+              }
+              @if (order.notes) {
+                &bull; {{ order.notes }}
+              }
+            </div>
+          </div>
+
+          @if (order.status === 'open') {
+            <div class="order-actions">
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-success]="order.canComplete"
+                [class.btn-secondary]="!order.canComplete"
+                [disabled]="processingOrderId() === order.id"
+                (click)="completeOrder(order)"
+              >
+                {{ processingOrderId() === order.id ? 'Checking...' : 'Complete Order' }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-danger-outline btn-sm"
+                [disabled]="processingOrderId() === order.id"
+                (click)="cancelOrder(order)"
+              >
+                Cancel
+              </button>
+            </div>
+          }
+        </div>
+
+        @if (order.status === 'open' && !order.canComplete) {
+          <div class="blocked-banner">
+            <strong>Order blocked due to insufficient stock:</strong>
+            <ul>
+              @for (s of (blockedBannerByOrder()[order.id] ?? order.shortages); track s.materialId) {
+                <li>
+                  <strong>{{ s.materialName }}</strong>: need
+                  <span class="mono">{{ s.required }} {{ s.unit }}</span>, have
+                  <span class="mono">{{ s.available }} {{ s.unit }}</span> &mdash;
+                  <strong>missing {{ s.missing }} {{ s.unit }}</strong>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Material Required</th>
+                <th>Total Needed</th>
+                <th>Current Stock</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (req of order.requirements; track req.materialId) {
+                <tr [class.row-short]="order.status === 'open' && req.isShort">
+                  <td class="mat-name">{{ req.materialName }}</td>
+                  <td class="mono">{{ req.required }} {{ req.unit }}</td>
+                  <td class="mono">{{ req.available }} {{ req.unit }}</td>
+                  <td>
+                    @if (order.status !== 'open') {
+                      <span class="text-muted">&mdash;</span>
+                    } @else if (req.isShort) {
+                      <span class="badge badge-danger">
+                        Short {{ req.missing }} {{ req.unit }}
+                      </span>
+                    } @else {
+                      <span class="badge badge-ok">Available</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </article>
+    }
+  </div>
+}
+
+@if (modalOpen()) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div
+      class="modal-panel modal-wide"
+      role="dialog"
+      aria-modal="true"
+      aria-label="New Production Order"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <h2 class="modal-title">New Production Order</h2>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="createOrder()">
+        <div class="modal-body form-grid">
+          @if (formError()) {
+            <div class="alert alert-danger">{{ formError() }}</div>
+          }
+
+          <div class="form-row-2">
+            <div class="field">
+              <label class="field-label" for="order-product">Product</label>
+              <select id="order-product" class="select" formControlName="productId">
+                @for (p of products(); track p.id) {
+                  <option [value]="p.id">{{ p.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="order-qty">Quantity</label>
+              <input
+                id="order-qty"
+                type="number"
+                min="1"
+                step="1"
+                class="input"
+                formControlName="quantity"
+              />
+              @if (form.controls.quantity.touched && form.controls.quantity.invalid) {
+                <span class="field-error">Quantity must be a positive whole number.</span>
+              }
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="order-notes">Notes (optional)</label>
+            <input
+              id="order-notes"
+              type="text"
+              class="input"
+              formControlName="notes"
+              placeholder="e.g. Showroom batch or customer reference"
+            />
+          </div>
+
+          @if (liveBomPreview().length > 0) {
+            <div class="preview-box">
+              <div class="preview-title">Material Requirement Preview</div>
+              <div class="preview-list">
+                @for (item of liveBomPreview(); track item.materialId) {
+                  <div class="preview-row">
+                    <span>{{ item.materialName }}</span>
+                    <span class="mono">
+                      Need {{ item.required }} {{ item.unit }} (Have {{ item.currentStock }} {{ item.unit }})
+                      @if (item.missing > 0) {
+                        <strong class="short-tag">&bull; Short {{ item.missing }} {{ item.unit }}</strong>
+                      }
+                    </span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+            {{ submitting() ? 'Creating...' : 'Create Order' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,193 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-title">Raw Materials Inventory</h1>
+    <p class="page-subtitle">
+      Track stock quantities, units, and reorder thresholds across the workshop.
+    </p>
+  </div>
+  <button type="button" class="btn btn-primary" (click)="openCreateModal()">
+    + Add Material
+  </button>
+</header>
+
+<section class="card">
+  <div class="toolbar">
+    <input
+      type="search"
+      class="input search-input"
+      placeholder="Search by material name or unit..."
+      [value]="searchTerm()"
+      (input)="searchTerm.set($any($event.target).value)"
+      aria-label="Search materials"
+    />
+
+    <button
+      type="button"
+      class="btn btn-secondary"
+      [class.filter-active]="lowStockOnly()"
+      (click)="lowStockOnly.set(!lowStockOnly())"
+    >
+      Low Stock Only ({{ lowStockCount() }})
+    </button>
+  </div>
+
+  @if (loading()) {
+    <div class="empty-state">Loading materials...</div>
+  } @else if (error()) {
+    <div class="card-body">
+      <div class="alert alert-danger">{{ error() }}</div>
+    </div>
+  } @else if (filteredMaterials().length === 0) {
+    <div class="empty-state">
+      No materials match the current filter.
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>Unit</th>
+            <th>In Stock</th>
+            <th>Reorder Level</th>
+            <th>Status</th>
+            <th class="col-actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filteredMaterials(); track item.id) {
+            <tr [class.row-warning]="item.isLowStock">
+              <td class="cell-name">{{ item.name }}</td>
+              <td>{{ item.unit }}</td>
+              <td class="mono cell-stock">{{ item.stockQuantity }}</td>
+              <td class="mono">{{ item.reorderLevel }}</td>
+              <td>
+                @if (item.isLowStock) {
+                  <span class="badge badge-warn">Low Stock</span>
+                } @else {
+                  <span class="badge badge-ok">Healthy</span>
+                }
+              </td>
+              <td class="col-actions">
+                <div class="action-group">
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    (click)="openEditModal(item)"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-danger-outline btn-sm"
+                    (click)="deleteMaterial(item)"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+@if (modalOpen()) {
+  <div class="modal-backdrop" (click)="closeModal()">
+    <div
+      class="modal-panel"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-label]="editingMaterial() ? 'Edit Material' : 'Add Material'"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ editingMaterial() ? 'Edit Material' : 'Add Raw Material' }}
+        </h2>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="saveMaterial()">
+        <div class="modal-body form-grid">
+          @if (formError()) {
+            <div class="alert alert-danger">{{ formError() }}</div>
+          }
+
+          <div class="field">
+            <label class="field-label" for="mat-name">Material Name</label>
+            <input
+              id="mat-name"
+              type="text"
+              class="input"
+              formControlName="name"
+              placeholder="e.g. Oak Wood Board"
+            />
+            @if (form.controls.name.touched && form.controls.name.invalid) {
+              <span class="field-error">Material name is required.</span>
+            }
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="mat-unit">Unit</label>
+            <input
+              id="mat-unit"
+              type="text"
+              class="input"
+              formControlName="unit"
+              placeholder="e.g. boards, pcs, L, kg"
+            />
+            @if (form.controls.unit.touched && form.controls.unit.invalid) {
+              <span class="field-error">Unit is required.</span>
+            }
+          </div>
+
+          <div class="form-row-2">
+            <div class="field">
+              <label class="field-label" for="mat-stock">Current Stock</label>
+              <input
+                id="mat-stock"
+                type="number"
+                step="any"
+                min="0"
+                class="input"
+                formControlName="stockQuantity"
+              />
+              @if (form.controls.stockQuantity.touched && form.controls.stockQuantity.invalid) {
+                <span class="field-error">Must be 0 or greater.</span>
+              }
+            </div>
+
+            <div class="field">
+              <label class="field-label" for="mat-reorder">Reorder Level</label>
+              <input
+                id="mat-reorder"
+                type="number"
+                step="any"
+                min="0"
+                class="input"
+                formControlName="reorderLevel"
+              />
+              @if (form.controls.reorderLevel.touched && form.controls.reorderLevel.invalid) {
+                <span class="field-error">Must be 0 or greater.</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+            {{ submitting() ? 'Saving...' : (editingMaterial() ? 'Save Changes' : 'Create Material') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,21 @@
+{
+  "name": "workshop-flow",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WorkshopFlow - Production and inventory management for a small manufacturing workshop",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c cyan,magenta \"npm --prefix backend run dev\" \"npm --prefix frontend run start\"",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:frontend": "npm --prefix frontend run start",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "start": "NODE_ENV=production npm --prefix backend run start",
+    "test": "npm --prefix backend run test",
+    "lint": "npm --prefix backend run typecheck"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

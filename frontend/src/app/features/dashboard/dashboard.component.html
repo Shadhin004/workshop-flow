@@ -1,0 +1,173 @@
+<header class="page-header">
+  <div>
+    <h1 class="page-title">Workshop Dashboard</h1>
+    <p class="page-subtitle">
+      Live overview of raw material alerts, open production orders, and shop floor activity.
+    </p>
+  </div>
+  <div class="header-actions">
+    <a routerLink="/orders" class="btn btn-primary">+ New Production Order</a>
+    <button type="button" class="btn btn-secondary" (click)="loadDashboard()">
+      Refresh
+    </button>
+  </div>
+</header>
+
+@if (loading()) {
+  <div class="card card-body empty-state">Loading workshop overview...</div>
+} @else if (error()) {
+  <div class="alert alert-danger">{{ error() }}</div>
+} @else {
+  @if (summary(); as data) {
+  <section class="kpi-grid" aria-label="Workshop summary metrics">
+    <div class="card kpi-card">
+      <div class="kpi-label">Raw Materials</div>
+      <div class="kpi-value mono">{{ data.stats.totalMaterials }}</div>
+      <div class="kpi-meta">Tracked in inventory</div>
+    </div>
+
+    <div class="card kpi-card" [class.kpi-warn]="data.stats.lowStockCount > 0">
+      <div class="kpi-label">Low Stock Alerts</div>
+      <div class="kpi-value mono">{{ data.stats.lowStockCount }}</div>
+      <div class="kpi-meta">
+        {{ data.stats.lowStockCount === 0 ? 'All levels healthy' : 'At or below reorder level' }}
+      </div>
+    </div>
+
+    <div class="card kpi-card">
+      <div class="kpi-label">Products</div>
+      <div class="kpi-value mono">{{ data.stats.totalProducts }}</div>
+      <div class="kpi-meta">Configured with BOM</div>
+    </div>
+
+    <div class="card kpi-card" [class.kpi-danger]="data.stats.blockedOrdersCount > 0">
+      <div class="kpi-label">Open Orders</div>
+      <div class="kpi-value mono">{{ data.stats.openOrdersCount }}</div>
+      <div class="kpi-meta">
+        @if (data.stats.blockedOrdersCount > 0) {
+          {{ data.stats.blockedOrdersCount }} blocked by material shortage
+        } @else {
+          {{ data.stats.completedOrdersCount }} completed overall
+        }
+      </div>
+    </div>
+  </section>
+
+  <div class="dashboard-grid">
+    <!-- Low-Stock Materials -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Low-Stock Materials</h2>
+        <a routerLink="/materials" class="link-subtle">Manage all &rarr;</a>
+      </div>
+      @if (data.lowStockMaterials.length === 0) {
+        <div class="empty-state">
+          All materials are above their reorder levels.
+        </div>
+      } @else {
+        <div class="list-stack">
+          @for (item of data.lowStockMaterials; track item.id) {
+            <div class="list-row">
+              <div>
+                <div class="row-title">{{ item.name }}</div>
+                <div class="row-meta mono">
+                  In stock: <strong>{{ item.stockQuantity }} {{ item.unit }}</strong>
+                  &bull; Reorder at: {{ item.reorderLevel }} {{ item.unit }}
+                </div>
+              </div>
+              <div class="row-actions">
+                <span class="badge badge-warn">Low Stock</span>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  [disabled]="restockingMaterialId() === item.id"
+                  (click)="quickRestock(item)"
+                  title="Quickly add restock batch"
+                >
+                  {{ restockingMaterialId() === item.id ? 'Adding...' : '+ Quick Restock' }}
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- Open Production Orders -->
+    <section class="card">
+      <div class="card-header">
+        <h2 class="card-title">Open Production Orders</h2>
+        <a routerLink="/orders" class="link-subtle">View all orders &rarr;</a>
+      </div>
+      @if (data.openOrders.length === 0) {
+        <div class="empty-state">
+          No open production orders. Create one to start a workshop batch.
+        </div>
+      } @else {
+        <div class="list-stack">
+          @for (order of data.openOrders; track order.id) {
+            <div class="list-row order-row">
+              <div class="order-info">
+                <div class="order-heading">
+                  <span class="row-title">
+                    #{{ order.id }} &mdash; {{ order.quantity }} &times; {{ order.productName }}
+                  </span>
+                  @if (order.canComplete) {
+                    <span class="badge badge-ok">Ready</span>
+                  } @else {
+                    <span class="badge badge-danger">Blocked</span>
+                  }
+                </div>
+                @if (!order.canComplete && order.shortages.length > 0) {
+                  <div class="shortage-inline">
+                    Missing:
+                    @for (s of order.shortages; track s.materialId; let last = $last) {
+                      <strong>{{ s.materialName }}</strong>
+                      ({{ s.missing }} {{ s.unit }}){{ last ? '' : ', ' }}
+                    }
+                  </div>
+                } @else if (order.notes) {
+                  <div class="row-meta">{{ order.notes }}</div>
+                }
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-success]="order.canComplete"
+                [class.btn-secondary]="!order.canComplete"
+                [disabled]="completingOrderId() === order.id"
+                (click)="completeOrder(order)"
+              >
+                {{ completingOrderId() === order.id ? 'Processing...' : 'Complete Order' }}
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </section>
+  </div>
+
+  <!-- Recent Activity -->
+  <section class="card activity-card">
+    <div class="card-header">
+      <h2 class="card-title">Recent Workshop Activity</h2>
+    </div>
+    @if (data.recentActivity.length === 0) {
+      <div class="empty-state">No recent activity recorded yet.</div>
+    } @else {
+      <div class="activity-list">
+        @for (entry of data.recentActivity; track entry.id) {
+          <div class="activity-item">
+            <span class="activity-dot" [class]="'dot-' + entry.action"></span>
+            <span class="activity-summary">{{ entry.summary }}</span>
+            <span class="activity-time mono">
+              {{ entry.createdAt | date: 'MMM d, HH:mm' }}
+            </span>
+          </div>
+        }
+      </div>
+    }
+  </section>
+  }
+}
