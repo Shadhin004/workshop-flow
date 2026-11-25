@@ -28,7 +28,7 @@ export class ActivityRepository {
 
     const row = this.db
       .prepare('SELECT * FROM activity_logs WHERE id = ?')
-      .get(Number(res.lastInsertRowid)) as ActivityRow;
+      .get(Number(res.lastInsertRowid)) as unknown as ActivityRow;
 
     return {
       id: row.id,
@@ -43,7 +43,7 @@ export class ActivityRepository {
   findRecent(limit = 12): ActivityLog[] {
     const rows = this.db
       .prepare('SELECT * FROM activity_logs ORDER BY id DESC LIMIT ?')
-      .all(limit) as ActivityRow[];
+      .all(limit) as unknown as ActivityRow[];
 
     return rows.map((row) => ({
       id: row.id,

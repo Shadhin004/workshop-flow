@@ -43,7 +43,7 @@ export class ProductRepository {
          WHERE bom.product_id IN (${placeholders})
          ORDER BY m.name COLLATE NOCASE ASC`
       )
-      .all(...productIds) as BomJoinRow[];
+      .all(...productIds) as unknown as BomJoinRow[];
 
     for (const row of rows) {
       const list = map.get(row.product_id) ?? [];
@@ -77,7 +77,7 @@ export class ProductRepository {
   findAll(): Product[] {
     const rows = this.db
       .prepare('SELECT * FROM products ORDER BY name COLLATE NOCASE ASC')
-      .all() as ProductRow[];
+      .all() as unknown as ProductRow[];
     return this.mapProducts(rows);
   }
 
@@ -182,6 +182,6 @@ export class ProductRepository {
 
   delete(id: number): boolean {
     const result = this.db.prepare('DELETE FROM products WHERE id = ?').run(id);
-    return result.changes > 0;
+    return Number(result.changes) > 0;
   }
 }

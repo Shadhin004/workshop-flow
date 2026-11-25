@@ -53,14 +53,14 @@ export class OrderRepository {
     const rows = status
       ? (this.db
           .prepare(`${baseQuery} WHERE po.status = ? ORDER BY po.created_at DESC, po.id DESC`)
-          .all(status) as OrderRow[])
+          .all(status) as unknown as OrderRow[])
       : (this.db
           .prepare(
             `${baseQuery}
              ORDER BY CASE po.status WHEN 'open' THEN 0 WHEN 'completed' THEN 1 ELSE 2 END,
                       po.created_at DESC, po.id DESC`
           )
-          .all() as OrderRow[]);
+          .all() as unknown as OrderRow[]);
 
     return rows.map(mapOrderRow);
   }

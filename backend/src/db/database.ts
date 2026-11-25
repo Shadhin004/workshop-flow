@@ -1,45 +1,69 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import Database from 'better-sqlite3';
+import { DatabaseSync } from 'node:sqlite';
+import { SCHEMA_SQL } from './schema.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+export type SqliteDb = DatabaseSync;
 
-export type SqliteDb = Database.Database;
-
-function resolveSchemaPath(): string {
-  const candidates = [
-    path.join(__dirname, 'schema.sql'),
-    path.resolve(process.cwd(), 'src/db/schema.sql'),
-    path.resolve(process.cwd(), 'dist/db/schema.sql'),
-    path.resolve(process.cwd(), 'backend/src/db/schema.sql'),
-  ];
-
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-
-  throw new Error(`Could not locate schema.sql in: ${candidates.join(', ')}`);
-}
+const transactionDepth = new WeakMap<SqliteDb, number>();
 
 export function createDatabase(dbPath: string): SqliteDb {
   if (dbPath !== ':memory:') {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
   }
 
-  const db = new Database(dbPath);
-  db.pragma('journal_mode = WAL');
-  db.pragma('foreign_keys = ON');
+  const db = new DatabaseSync(dbPath, {
+    enableForeignKeyConstraints: true,
+    timeout: 5000,
+  });
 
-  const schemaSql = fs.readFileSync(resolveSchemaPath(), 'utf-8');
-  db.exec(schemaSql);
+  if (dbPath !== ':memory:') {
+    db.exec('PRAGMA journal_mode = WAL;');
+  }
+  db.exec('PRAGMA foreign_keys = ON;');
+  db.exec(SCHEMA_SQL);
 
   return db;
 }
 
 export function runInTransaction<T>(db: SqliteDb, fn: () => T): T {
-  const tx = db.transaction(fn);
-  return tx();
+  const depth = transactionDepth.get(db) ?? 0;
+
+  if (depth === 0) {
+    db.exec('BEGIN IMMEDIATE');
+    transactionDepth.set(db, 1);
+    try {
+      const result = fn();
+      db.exec('COMMIT');
+      return result;
+    } catch (err) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // Ignore rollback errors if the transaction was already aborted by SQLite
+      }
+      throw err;
+    } finally {
+      transactionDepth.set(db, 0);
+    }
+  }
+
+  const savepoint = `sp_${depth}`;
+  db.exec(`SAVEPOINT ${savepoint}`);
+  transactionDepth.set(db, depth + 1);
+  try {
+    const result = fn();
+    db.exec(`RELEASE SAVEPOINT ${savepoint}`);
+    return result;
+  } catch (err) {
+    try {
+      db.exec(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+      db.exec(`RELEASE SAVEPOINT ${savepoint}`);
+    } catch {
+      // Ignore savepoint rollback errors
+    }
+    throw err;
+  } finally {
+    transactionDepth.set(db, depth);
+  }
 }

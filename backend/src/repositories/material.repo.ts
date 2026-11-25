@@ -37,7 +37,7 @@ export class MaterialRepository {
   findAll(): Material[] {
     const rows = this.db
       .prepare('SELECT * FROM materials ORDER BY name COLLATE NOCASE ASC')
-      .all() as MaterialRow[];
+      .all() as unknown as MaterialRow[];
     return rows.map(mapMaterial);
   }
 
@@ -46,7 +46,7 @@ export class MaterialRepository {
       .prepare(
         'SELECT * FROM materials WHERE stock_quantity <= reorder_level ORDER BY (reorder_level - stock_quantity) DESC, name COLLATE NOCASE ASC'
       )
-      .all() as MaterialRow[];
+      .all() as unknown as MaterialRow[];
     return rows.map(mapMaterial);
   }
 
@@ -62,7 +62,7 @@ export class MaterialRepository {
     const placeholders = ids.map(() => '?').join(', ');
     const rows = this.db
       .prepare(`SELECT * FROM materials WHERE id IN (${placeholders})`)
-      .all(...ids) as MaterialRow[];
+      .all(...ids) as unknown as MaterialRow[];
     return rows.map(mapMaterial);
   }
 
@@ -135,6 +135,6 @@ export class MaterialRepository {
 
   delete(id: number): boolean {
     const result = this.db.prepare('DELETE FROM materials WHERE id = ?').run(id);
-    return result.changes > 0;
+    return Number(result.changes) > 0;
   }
 }
