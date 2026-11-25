@@ -14,7 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export interface AppOptions {
   db: SqliteDb;
-  corsOrigin?: string;
+  corsOrigin?: string | boolean;
   staticDir?: string;
 }
 

@@ -16,6 +16,12 @@ const app = createApp({
   corsOrigin: env.corsOrigin,
 });
 
-app.listen(env.port, () => {
-  console.log(`WorkshopFlow API listening on http://localhost:${env.port}`);
-});
+// Export Express app for Vercel Services / serverless runtime
+export default app;
+
+// Start standalone HTTP listener for local dev and container/App Service hosting
+if (!process.env.VERCEL) {
+  app.listen(env.port, () => {
+    console.log(`WorkshopFlow API listening on http://localhost:${env.port}`);
+  });
+}

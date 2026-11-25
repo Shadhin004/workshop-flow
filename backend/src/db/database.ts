@@ -7,6 +7,23 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export type SqliteDb = Database.Database;
 
+function resolveSchemaPath(): string {
+  const candidates = [
+    path.join(__dirname, 'schema.sql'),
+    path.resolve(process.cwd(), 'src/db/schema.sql'),
+    path.resolve(process.cwd(), 'dist/db/schema.sql'),
+    path.resolve(process.cwd(), 'backend/src/db/schema.sql'),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error(`Could not locate schema.sql in: ${candidates.join(', ')}`);
+}
+
 export function createDatabase(dbPath: string): SqliteDb {
   if (dbPath !== ':memory:') {
     fs.mkdirSync(path.dirname(dbPath), { recursive: true });
@@ -16,8 +33,7 @@ export function createDatabase(dbPath: string): SqliteDb {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 
-  const schemaPath = path.join(__dirname, 'schema.sql');
-  const schemaSql = fs.readFileSync(schemaPath, 'utf-8');
+  const schemaSql = fs.readFileSync(resolveSchemaPath(), 'utf-8');
   db.exec(schemaSql);
 
   return db;
