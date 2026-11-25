@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-vercel/
 .angular/
 *.db
 *.db-shm
@@ -7,4 +8,5 @@ dist/
 *.sqlite
 .env
 .DS_Store
+.vercel/
 coverage/

@@ -5,13 +5,16 @@
       "root": "backend",
       "framework": "express",
       "entrypoint": "src/app.ts",
-      "installCommand": "npm install"
+      "installCommand": "npm install --include=dev",
+      "buildCommand": "npm run build:vercel",
+      "outputDirectory": "dist-vercel"
     },
     "frontend": {
       "root": "frontend",
       "framework": "angular",
-      "installCommand": "npm install",
-      "buildCommand": "npm run build",
+      "installCommand": "npm install --include=dev",
+      "buildCommand": "npm run build:vercel",
+      "outputDirectory": "dist-vercel",
       "outputDirectory": "dist/frontend/browser"
     }
   },

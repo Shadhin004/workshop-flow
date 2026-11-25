@@ -42,13 +42,10 @@ export function configureApp(app: Express, options: AppOptions): Express {
     });
   });
 
-  // Serve built Angular SPA in production (single App Service deployment)
-  const defaultStaticDir = path.resolve(__dirname, '../../frontend/dist/frontend/browser');
-  const staticDir = options.staticDir ?? defaultStaticDir;
-  if (fs.existsSync(staticDir)) {
-    app.use(express.static(staticDir));
+  if (options.staticDir && fs.existsSync(options.staticDir)) {
+    app.use(express.static(options.staticDir));
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(staticDir, 'index.html'));
+      res.sendFile(path.join(options.staticDir!, 'index.html'));
     });
   }
 
