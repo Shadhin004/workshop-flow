@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import cors from 'cors';
 import express, { type Express } from 'express';
 import type { SqliteDb } from './db/database.js';
@@ -9,8 +8,6 @@ import { createDashboardRouter } from './routes/dashboard.routes.js';
 import { createMaterialsRouter } from './routes/materials.routes.js';
 import { createOrdersRouter } from './routes/orders.routes.js';
 import { createProductsRouter } from './routes/products.routes.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export interface AppOptions {
   db: SqliteDb;
