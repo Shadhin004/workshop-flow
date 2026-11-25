@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc && cp src/db/schema.sql dist/db/schema.sql",
+    "install:backend": "npm install --include=dev",
     "build:vercel": "rm -rf dist-vercel && esbuild src/app.ts --bundle --platform=node --target=node22 --format=cjs --outfile=dist-vercel/app.js --external:node:*",
     "start": "node dist/server.js",
     "test": "vitest run",

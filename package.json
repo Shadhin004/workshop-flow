@@ -10,7 +10,11 @@
     "build": "npm --prefix frontend run build && npm --prefix backend run build",
     "start": "NODE_ENV=production npm --prefix backend run start",
     "test": "npm --prefix backend run test",
-    "lint": "npm --prefix backend run typecheck"
+    "lint": "npm --prefix backend run typecheck",
+    "install:backend": "npm --prefix backend install --include=dev",
+    "install:frontend": "npm --prefix frontend install --include=dev",
+    "build:vercel": "npm --prefix backend run build:vercel",
+    "build:frontend": "npm --prefix frontend run build"
   },
   "dependencies": {
     "cors": "^2.8.5",
