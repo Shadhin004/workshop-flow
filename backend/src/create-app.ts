@@ -18,9 +18,7 @@ export interface AppOptions {
   staticDir?: string;
 }
 
-export function createApp(options: AppOptions): Express {
-  const app = express();
-
+export function configureApp(app: Express, options: AppOptions): Express {
   app.use(
     cors({
       origin: options.corsOrigin ?? 'http://localhost:4200',
@@ -59,4 +57,8 @@ export function createApp(options: AppOptions): Express {
 
   app.use(errorHandler);
   return app;
+}
+
+export function createApp(options: AppOptions): Express {
+  return configureApp(express(), options);
 }

@@ -1,5 +1,6 @@
+import express from 'express';
 import { getEnv } from './config/env.js';
-import { createApp } from './create-app.js';
+import { configureApp } from './create-app.js';
 import { createDatabase } from './db/database.js';
 import { seedDatabase } from './db/seed.js';
 
@@ -13,7 +14,8 @@ if (seeded) {
   console.log('Seeded WorkshopFlow database with furniture workshop data.');
 }
 
-const app = createApp({
+const app = express();
+configureApp(app, {
   db,
   corsOrigin: env.corsOrigin,
 });
