@@ -18,12 +18,25 @@
 
 ## Screenshots
 
-> _Placeholder — add screenshots after running locally:_
->
-> - **Dashboard**: `docs/screenshots/dashboard.png` — Low-stock alerts, open/blocked orders, and activity feed
-> - **Materials**: `docs/screenshots/materials.png` — Raw materials inventory table with low-stock warnings
-> - **Products & BOM**: `docs/screenshots/products.png` — Product catalog and Bill of Materials editor
-> - **Production Orders**: `docs/screenshots/orders.png` — Order requirements breakdown and shortage blocking banner
+### Dashboard
+Low-stock alerts, open/blocked production orders, and recent activity feed:
+
+![WorkshopFlow Dashboard](docs/screenshots/dashboard.png)
+
+### Raw Materials Inventory
+Inventory table with low-stock warnings and quick filtering:
+
+![WorkshopFlow Materials](docs/screenshots/materials.png)
+
+### Products & Bill of Materials (BOM)
+Product catalog and per-unit Bill of Materials breakdown:
+
+![WorkshopFlow Products & BOM](docs/screenshots/products.png)
+
+### Production Orders
+Order material requirements breakdown and shortage blocking banner:
+
+![WorkshopFlow Production Orders](docs/screenshots/orders.png)
 
 ---
 
